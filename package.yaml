@@ -9,7 +9,15 @@ extra-source-files:
 - README.md
 
 dependencies:
+  - aeson
+  - aeson-pretty
   - base >= 4.7 && < 5
+  - bytestring
+  # - line
+  - scalpel-core
+  - text
+  - unordered-containers
+  - webdriver
 
 executables:
   adventar-line-bot:
