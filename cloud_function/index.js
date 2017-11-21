@@ -2,6 +2,9 @@
 
 require('dotenv').config();
 const line = require('@line/bot-sdk');
+const datastore = require('@google-cloud/datastore')({
+  projectId: process.env.GCP_PROJECT
+});
 
 const config = {
   channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
@@ -9,17 +12,21 @@ const config = {
 };
 
 const client = new line.Client(config);
+const backetName = process.env.BACKET_NAME;
 
 function handleEvent(event) {
   console.log(event);
-  var message = 'Please push text message.';
-
-  if (event.type === 'message' && event.message.type === 'text') {
-    message = event.message.text;
+  if (event.type === 'follow' && event.source.type === 'user') {
+    const entity = {
+      key:  datastore.key([backetName, backetName + event.source.userId]),
+      data: { mid: event.source.userId }
+    };
+    return datastore.upsert(entity);
+  } else if (event.type === 'unfollow' && event.source.type === 'user') {
+    return datastore.delete(datastore.key([backetName, backetName + event.source.userId]));
+  } else {
+    return Promise.resolve(null);
   }
-
-  const echo = { type: 'text', text: message };
-  return client.replyMessage(event.replyToken, echo);
 }
 
 exports.handler = function echoBot (req, res) {
