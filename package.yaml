@@ -7,13 +7,15 @@ copyright:           2017 MATSUBARA Nobutada
 category:            Web
 extra-source-files:
 - README.md
+ghc-options:
+- -Wall
 
 dependencies:
   - aeson
   - aeson-pretty
   - base >= 4.7 && < 5
   - bytestring
-  # - line
+  - line
   - scalpel-core
   - text
   - unordered-containers

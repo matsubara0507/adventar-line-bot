@@ -2,65 +2,63 @@
 
 module Main where
 
+import           Prelude            hiding (unlines)
+
 import           Control.Exception  (IOException, catch)
-import           Control.Monad      (when)
-import           Data.Either        (isRight)
-import           Data.List          (intersperse)
-import           Data.Text          (Text, pack, unpack)
+import           Control.Monad      (unless)
+import           Data.Either        (isLeft)
+import           Data.Text          (Text, pack, unlines, unpack)
 import           Entry
 import           Html
 import           Json
+import           Line
 import           Scraper
 import           System.Environment (getArgs)
 
 main :: IO ()
 main = do
-  [htmlUrl, jsonPath] <- fmap pack <$> getArgs
-  catch (runBot htmlUrl jsonPath) $
+  [htmlUrl, jsonPath, token, mid] <- fmap pack <$> getArgs
+  catch (runBot htmlUrl jsonPath token mid) $
     \e -> putStrLn ("Error: " `mappend` show (e :: IOException))
 
-runBot :: Url -> Text -> IO ()
-runBot htmlUrl jsonPath = do
+runBot :: Url -> Text -> Text -> Text -> IO ()
+runBot htmlUrl jsonPath token mid = do
   oldCal <- readEntryJson jsonPath
   newCal <- adventarScraper <$> fetchHtml htmlUrl
 
   let
-    message = mkMessage oldCal newCal
+    messages = mkMessages oldCal newCal
 
-  putStrLn $ either id id message
+  unless (null messages) $ do
+    result <- pushMessage token mid . unlines $
+      "更新がありました！" : htmlUrl : messages
+    unless (isLeft result) $ updateEntryJson jsonPath newCal
 
-  when (isRight message) $ updateEntryJson jsonPath newCal
-
-
-mkMessage :: Calendar -> Calendar -> Either String String
-mkMessage oldCal newCal =
-  if null message then Left "No update..." else Right message
+mkMessages :: Calendar -> Calendar -> [Text]
+mkMessages oldCal newCal = mconcat $ mkMessage' <$> dates
   where
-    message = unlines . filter ("" /=) $ mkMessage' <$> dates
     mkMessage' date = diffShow date oldCal newCal
 
-diffShow :: Date -> Calendar -> Calendar -> String
+diffShow :: Date -> Calendar -> Calendar -> [Text]
 diffShow date = (.) (diffShow' date) . diff date
 
-diffShow' :: Date -> DiffEntry -> String
+diffShow' :: Date -> DiffEntry -> [Text]
 diffShow' date diffEntry =
   case diffEntry of
     NewEntry newEntry ->
-      mconcat [unpack date, " [New] ", ppEntry newEntry]
+      [mconcat [date, " [New] ", ppEntry newEntry]]
     UpdateBody newEntry ->
-      mconcat [unpack date, " [Update] ", ppEntry newEntry]
+      [mconcat [date, " [Update] ", ppEntry newEntry]]
     RemoveEntry oldEntry ->
-      mconcat [unpack date, " [Remove] ", ppEntry oldEntry]
+      [mconcat [date, " [Remove] ", ppEntry oldEntry]]
     ChangeUser oldEntry newEntry ->
-      mconcat . intersperse "\n" $
-        diffShow' date <$> [RemoveEntry oldEntry, NewEntry newEntry]
-    NoChanged -> ""
+      mconcat . diffShow' date <$> [RemoveEntry oldEntry, NewEntry newEntry]
+    NoChanged -> []
 
-ppEntry :: Entry -> String
-ppEntry (Entry user' comment' title' url') =
-  mconcat [mkBody comment' title' url', " by ", unpack user']
+ppEntry :: Entry -> Text
+ppEntry (Entry user' comment' title' _url) =
+  mconcat [mkBody comment' title', " by ", user']
   where
-    mkBody "" _ ""          = unpack "No Comment..."
-    mkBody comment_ _ ""    = unpack comment_
-    mkBody comment_ "" url_ = unpack $ mconcat ["<", url_, "|", comment_, ">"]
-    mkBody _ title_ url_    = unpack $ mconcat ["<", url_, "|", title_, ">"]
+    mkBody "" _        = "No Comment..."
+    mkBody comment_ "" = comment_
+    mkBody _ title_    = title_
