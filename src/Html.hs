@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Html where
 
 import           Data.Text               (Text, unpack)
