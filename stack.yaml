@@ -4,3 +4,13 @@ packages:
 extra-deps: []
 flags: {}
 extra-package-dbs: []
+
+docker:
+  repo: "fpco/stack-build"
+
+image:
+  container:
+    name: "matsubara0507/adventar-line-bot"
+    base: "matsubara0507/ubuntu-tcp"
+    add:
+      scripts: /usr/local/bin

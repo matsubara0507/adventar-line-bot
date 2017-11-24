@@ -12,17 +12,22 @@ import           Html
 import           Json
 import           Line
 import           Scraper
-import           System.Environment (getArgs)
+import           System.Environment (getArgs, getEnv)
+
+import           GHC.IO.Encoding
 
 main :: IO ()
 main = do
-  [htmlUrl, jsonPath, token, projectId, dsKind] <- fmap pack <$> getArgs
-  runBot htmlUrl jsonPath token projectId dsKind
+  setLocaleEncoding utf8
+  [htmlUrl, jsonPath, dsKind] <- fmap pack <$> getArgs
+  [token, projectId, wdHost, wdPort] <- 
+    fmap pack <$> mapM getEnv ["LINE_TOKEN", "PROJECT_ID", "WD_HOST", "WD_PORT"]
+  runBot jsonPath htmlUrl (wdHost, wdPort) token (projectId, dsKind)
 
-runBot :: Url -> Text -> Text -> Text -> Text -> IO ()
-runBot htmlUrl jsonPath token projectId dsKind = do
+runBot :: Text -> Url -> (Text, Text) -> Text -> (Text, Text) -> IO ()
+runBot jsonPath htmlUrl (wdHost, wdPort) token (projectId, dsKind) = do
   oldCal <- readEntryJson jsonPath
-  newCal <- adventarScraper <$> fetchHtml htmlUrl
+  newCal <- adventarScraper <$> fetchHtml wdHost wdPort htmlUrl
 
   let
     messages = mkMessages oldCal newCal
