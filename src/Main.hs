@@ -4,10 +4,9 @@ module Main where
 
 import           Prelude            hiding (unlines)
 
-import           Control.Exception  (IOException, catch)
 import           Control.Monad      (unless)
-import           Data.Either        (isLeft)
-import           Data.Text          (Text, pack, unlines, unpack)
+import           Data.Text          (Text, pack, unlines)
+import           Datastore
 import           Entry
 import           Html
 import           Json
@@ -17,12 +16,11 @@ import           System.Environment (getArgs)
 
 main :: IO ()
 main = do
-  [htmlUrl, jsonPath, token, mid] <- fmap pack <$> getArgs
-  catch (runBot htmlUrl jsonPath token mid) $
-    \e -> putStrLn ("Error: " `mappend` show (e :: IOException))
+  [htmlUrl, jsonPath, token, projectId, dsKind] <- fmap pack <$> getArgs
+  runBot htmlUrl jsonPath token projectId dsKind
 
-runBot :: Url -> Text -> Text -> Text -> IO ()
-runBot htmlUrl jsonPath token mid = do
+runBot :: Url -> Text -> Text -> Text -> Text -> IO ()
+runBot htmlUrl jsonPath token projectId dsKind = do
   oldCal <- readEntryJson jsonPath
   newCal <- adventarScraper <$> fetchHtml htmlUrl
 
@@ -30,9 +28,11 @@ runBot htmlUrl jsonPath token mid = do
     messages = mkMessages oldCal newCal
 
   unless (null messages) $ do
-    result <- pushMessage token mid . unlines $
-      "更新がありました！" : htmlUrl : messages
-    unless (isLeft result) $ updateEntryJson jsonPath newCal
+    let
+      message = unlines $ "更新がありました！" : htmlUrl : messages
+    mids <- getMids projectId dsKind
+    mapM_ (\mid -> pushMessage token mid message) mids
+    updateEntryJson jsonPath newCal
 
 mkMessages :: Calendar -> Calendar -> [Text]
 mkMessages oldCal newCal = mconcat $ mkMessage' <$> dates

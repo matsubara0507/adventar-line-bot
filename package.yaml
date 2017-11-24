@@ -15,6 +15,9 @@ dependencies:
   - aeson-pretty
   - base >= 4.7 && < 5
   - bytestring
+  - gogol
+  - gogol-datastore
+  - lens
   - line
   - scalpel-core
   - text
