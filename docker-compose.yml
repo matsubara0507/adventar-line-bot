@@ -15,7 +15,8 @@ services:
       WD_HOST: selenium
       WD_PORT: 4444
       LINE_TOKEN:
-      PROJECT_ID: 
+      PROJECT_ID:
+      TIME:
   selenium:
     image: selenium/standalone-chrome
     networks:

@@ -2,5 +2,5 @@
 
 set -e
 
-sleep 3
+sleep $TIME
 $@
