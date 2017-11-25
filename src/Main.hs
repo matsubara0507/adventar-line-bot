@@ -20,7 +20,7 @@ main :: IO ()
 main = do
   setLocaleEncoding utf8
   [htmlUrl, jsonPath, dsKind] <- fmap pack <$> getArgs
-  [token, projectId, wdHost, wdPort] <- 
+  [token, projectId, wdHost, wdPort] <-
     fmap pack <$> mapM getEnv ["LINE_TOKEN", "PROJECT_ID", "WD_HOST", "WD_PORT"]
   runBot jsonPath htmlUrl (wdHost, wdPort) token (projectId, dsKind)
 

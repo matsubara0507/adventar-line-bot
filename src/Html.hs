@@ -12,6 +12,5 @@ fetchHtml host port url = runSession config $ do
   openPage (unpack url)
   getSource
   where
-    config = useBrowser chrome $ 
+    config = useBrowser chrome $
       defaultConfig { wdHost = unpack host, wdPort = read (unpack port) }
-

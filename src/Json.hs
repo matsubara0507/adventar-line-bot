@@ -6,8 +6,8 @@ import           Data.Maybe               (fromMaybe)
 import           Data.Text                (Text, unpack)
 import           Data.Text.Lazy.Builder   (toLazyText)
 import           Data.Text.Lazy.Encoding  (encodeUtf8)
-import           Entry
 import qualified Data.Text.Lazy.IO        as LT
+import           Entry
 
 readEntryJson :: Text -> IO Calendar
 readEntryJson jsonPath =

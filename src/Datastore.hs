@@ -2,7 +2,7 @@
 
 module Datastore where
 
-import           Control.Lens             ((&), (.~), (<&>), (?~), (^.))
+import           Control.Lens             (view, (&), (.~), (<&>), (?~), (^.))
 import qualified Data.HashMap.Lazy        as HM
 import           Data.Maybe               (catMaybes, fromMaybe)
 import           Data.Text                (Text, append)
@@ -13,16 +13,15 @@ getMids :: Text -> Text -> IO [Text]
 getMids projectId kind = do
   env <- newEnv <&> envScopes .~ datastoreScope
   let
-    request = runQueryRequest &
-     (rqrPartitionId ?~ (partitionId & piProjectId ?~ projectId)) . (rqrGqlQuery ?~ (gqlQuery & gqQueryString ?~ append "SELECT * FROM " kind))
-  response <- runResourceT . runGoogle env $ send (projectsRunQuery request projectId)
-  return . catMaybes . fromMaybe [] $ do
-    batch <- response ^. rBatch
-    return $ getMid <$> batch ^. qrbEntityResults
+    request = runQueryRequest
+      & rqrPartitionId ?~ (partitionId & piProjectId ?~ projectId)
+      & rqrGqlQuery ?~ (gqlQuery & gqQueryString ?~ append "SELECT * FROM " kind)
+  response <-
+    runResourceT . runGoogle env $ send (projectsRunQuery request projectId)
+  return . catMaybes . fromMaybe [] $
+    fmap getMid . view qrbEntityResults <$> response ^. rBatch
 
 getMid :: EntityResult -> Maybe Text
-getMid result = do
-  entity' <- result ^. erEntity
-  properties <- entity' ^. eProperties
-  property <- HM.lookup "mid" $ properties ^. epAddtional
-  property ^. vStringValue
+getMid result =
+  result ^. erEntity >>= view eProperties
+    <&> view epAddtional >>= HM.lookup "mid" >>= view vStringValue
