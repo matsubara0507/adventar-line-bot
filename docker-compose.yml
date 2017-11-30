@@ -12,6 +12,7 @@ services:
       - apps
     environment:
       LANG: C.utf-8
+      TZ: Asia/Tokyo
       WD_HOST: selenium
       WD_PORT: 4444
       LINE_TOKEN:
@@ -22,6 +23,8 @@ services:
     networks:
       - apps
     ports: ["4444"]
+    environment:
+      TZ: Asia/Tokyo
 
 networks:
   apps:
